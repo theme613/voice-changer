@@ -23,12 +23,12 @@ import {
   FlaskConical,
   AlertCircle,
   Server,
+  ExternalLink,
 } from 'lucide-react';
 
 import Tooltip from './Tooltip';
 import {
   getProfiles,
-  getAudioDevices,
   startConversion,
   stopConversion,
   getConversionStatus,
@@ -36,7 +36,6 @@ import {
   testConversion,
   healthCheck,
   type VoiceProfile,
-  type AudioDevice,
 } from '../api';
 
 interface VoiceChangerProps {
@@ -45,14 +44,9 @@ interface VoiceChangerProps {
 }
 
 export default function VoiceChanger({ initialProfile }: VoiceChangerProps) {
-  // Profile & Devices
+  // Profile
   const [profiles, setProfiles] = useState<VoiceProfile[]>([]);
   const [selectedProfile, setSelectedProfile] = useState(initialProfile || '');
-  const [inputDevices, setInputDevices] = useState<AudioDevice[]>([]);
-  const [showAdvancedDevices, setShowAdvancedDevices] = useState(false);
-  const [outputDevices, setOutputDevices] = useState<AudioDevice[]>([]);
-  const [selectedInput, setSelectedInput] = useState<number | null>(null);
-  const [selectedOutput, setSelectedOutput] = useState<number | null>(null);
 
   // Conversion settings
   const [pitchShift, setPitchShift] = useState(0);
@@ -93,43 +87,11 @@ export default function VoiceChanger({ initialProfile }: VoiceChangerProps) {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const testAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // --- Load profiles and devices on mount ---
-  const loadDevices = async () => {
-    try {
-      const devicesRes = await getAudioDevices();
-      setInputDevices(devicesRes.input);
-      setOutputDevices(devicesRes.output);
-      
-      // Auto-selection logic
-      if (!selectedInput && devicesRes.input.length > 0) {
-        const mic = devicesRes.input.find(d => !d.name.toLowerCase().includes('cable output') && d.is_default) || devicesRes.input[0];
-        if (mic) setSelectedInput(mic.id);
-      }
-      
-      if (!selectedOutput && devicesRes.output.length > 0) {
-        const out = devicesRes.output.find(d => d.name.toLowerCase().includes('cable input') || d.is_default) || devicesRes.output[0];
-        if (out) setSelectedOutput(out.id);
-      }
-
-      if (devicesRes.input.length === 0 || devicesRes.output.length === 0) {
-        setError('No audio devices found. Please ensure virtual cables and a microphone are connected.');
-      } else {
-        // Clear device error if previously set
-        if (error.includes('No audio devices found')) setError('');
-      }
-    } catch (err: any) {
-      console.error('Failed to load devices:', err);
-      setError('Failed to fetch audio devices.');
-    }
-  };
-
+  // --- Load profiles on mount ---
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [profilesRes] = await Promise.all([
-          getProfiles(),
-          loadDevices()
-        ]);
+        const profilesRes = await getProfiles();
         setProfiles(profilesRes.profiles);
         checkEngineStatus();
 
@@ -146,6 +108,7 @@ export default function VoiceChanger({ initialProfile }: VoiceChangerProps) {
     };
     loadData();
   }, [initialProfile]);
+
 
   // --- Level meter polling ---
   useEffect(() => {
@@ -194,8 +157,6 @@ export default function VoiceChanger({ initialProfile }: VoiceChangerProps) {
     try {
       await startConversion({
         profile_name: selectedProfile,
-        input_device: selectedInput,
-        output_device: selectedOutput,
         pitch_shift: pitchShift,
         index_rate: indexRate,
         input_gain: inputGain,
@@ -329,75 +290,32 @@ export default function VoiceChanger({ initialProfile }: VoiceChangerProps) {
 
         <div className="divider" />
 
-        {/* --- Audio Devices --- */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
-          <h3 style={{ margin: 0, fontSize: '1rem' }}>Audio Devices</h3>
-          <button 
-            className="btn btn-secondary" 
-            style={{ padding: '4px 8px', fontSize: '0.8rem' }}
-            onClick={loadDevices}
-            disabled={isRunning}
-          >
-            Refresh Devices
-          </button>
-        </div>
-        <div style={{ padding: '12px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid var(--accent-blue)', borderRadius: '6px', marginBottom: '16px', fontSize: '0.9rem' }}>
-          <strong>Audio Routing:</strong> For Discord/Games, set <em>Output (Speakers)</em> below to <strong>CABLE Input</strong>. Then, in Discord, set your microphone to <strong>CABLE Output</strong>.
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-          <label style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-            <input type="checkbox" checked={showAdvancedDevices} onChange={e => setShowAdvancedDevices(e.target.checked)} />
-            Show Advanced Devices
-          </label>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
-          {/* Input Device */}
-          <div className="form-group">
-            <label className="form-label">
-              <Mic size={14} />
-              Input (Microphone)
-            </label>
-            <select
-              className={`form-input ${inputDevices.length === 0 ? 'error-border' : ''}`}
-              value={selectedInput ?? ''}
-              onChange={(e) => setSelectedInput(e.target.value ? Number(e.target.value) : null)}
-              disabled={isRunning || inputDevices.length === 0}
-            >
-              <option value="">Select Input Device...</option>
-              {inputDevices.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.is_default ? '★ ' : ''}{d.name} ({d.sample_rate ? d.sample_rate / 1000 + 'kHz, ' : ''}{d.channels}ch)
-                </option>
-              ))}
-            </select>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-              Select your physical microphone.
+        {/* --- Audio Devices Notice --- */}
+        <div style={{
+          padding: '16px',
+          background: 'rgba(59, 130, 246, 0.08)',
+          border: '1px solid rgba(59, 130, 246, 0.25)',
+          borderRadius: '8px',
+          marginBottom: 'var(--space-4)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Mic size={16} style={{ color: 'var(--accent-blue)' }} />
+              <strong style={{ fontSize: '0.95rem' }}>Audio Devices Controlled in Demo App</strong>
             </div>
-          </div>
-
-          {/* Output Device */}
-          <div className="form-group">
-            <label className="form-label">
-              <Speaker size={14} />
-              Output (Converter Destination)
-            </label>
-            <select
-              className={`form-input ${outputDevices.length === 0 ? 'error-border' : ''}`}
-              value={selectedOutput ?? ''}
-              onChange={(e) => setSelectedOutput(e.target.value ? Number(e.target.value) : null)}
-              disabled={isRunning || outputDevices.length === 0}
+            <a
+              href="http://127.0.0.1:18888"
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-secondary"
+              style={{ padding: '4px 10px', fontSize: '0.75rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
             >
-              <option value="">Select Output Device...</option>
-              {inputDevices.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.is_default ? '★ ' : ''}{d.name} ({d.sample_rate ? d.sample_rate / 1000 + 'kHz, ' : ''}{d.channels}ch)
-                </option>
-              ))}
-            </select>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-              Select CABLE Input (Virtual Cable) to route audio to Discord.
-            </div>
+              Open Demo Client <ExternalLink size={12} />
+            </a>
           </div>
+          <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+            Audio input (Microphone) and output (CABLE Input for Discord) are managed directly inside the <strong>Realtime Voice Changer Client Demo</strong> window (under <code>AUDIO: client</code>). Use the demo app window to select your microphone and destination.
+          </p>
         </div>
 
         <div className="divider" />
