@@ -1,0 +1,15 @@
+{
+  "vocal_models": [
+    {
+      "name": "htdemucs.yaml",
+      "url": "https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/htdemucs.yaml",
+      "path": "models/vocal_isolation/htdemucs.yaml",
+      "size_mb": 0.1,
+      "required": false
+    }
+  ],
+  "binaries": [
+  ],
+  "voice_models": [
+  ]
+}

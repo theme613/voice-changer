@@ -1,0 +1,35 @@
+# Backend Dependencies for Voice Changer App
+# Install with: pip install -r requirements.txt
+
+# --- Web Framework ---
+fastapi==0.115.*
+uvicorn[standard]==0.32.*
+python-multipart==0.0.*
+
+# --- Audio Processing ---
+pydub==0.25.*
+noisereduce==3.*
+soundfile==0.13.*
+numpy>=1.24,<2.0
+imageio-ffmpeg==0.6.*
+
+# --- Vocal Isolation ---
+# Install GPU version for NVIDIA: pip install audio-separator[gpu]
+# Install CPU version: pip install audio-separator[cpu]
+audio-separator[gpu]>=0.25
+
+# --- Voice Conversion (RVC) ---
+rvc-python>=0.3
+
+# --- Real-Time Audio I/O ---
+sounddevice>=0.5
+
+# --- PyTorch (CUDA 12.x) ---
+# If you need CPU-only: pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://download.pytorch.org/whl/cu124
+torch>=2.2
+torchaudio>=2.2
+
+httpx
+
+psutil

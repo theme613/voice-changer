@@ -1,0 +1,37 @@
+{
+    "general": {
+        "theme": "dark",
+        "detailed_logs": true,
+        "auto_check_files": true
+    },
+    "paths": {
+        "models_dir": "C:\\Users\\theme\\Documents\\voicechanger\\models\\vocal",
+        "profiles_dir": "C:\\Users\\theme\\Documents\\voicechanger\\models\\profiles",
+        "datasets_dir": "C:\\Users\\theme\\Documents\\voicechanger\\datasets",
+        "temp_dir": "C:\\Users\\theme\\Documents\\voicechanger\\uploads",
+        "logs_dir": "C:\\Users\\theme\\Documents\\voicechanger\\logs",
+        "engine_dir": "C:\\Users\\theme\\Documents\\voicechanger\\engine\\voice-changer\\MMVCServerSIO",
+        "ffmpeg_path": "",
+        "external_trainer_path": "C:\\Users\\theme\\Documents\\songbird\\Applio-3.6.4"
+    },
+    "performance": {
+        "device": "cuda",
+        "quality_preset": "balanced",
+        "batch_size": 8,
+        "fp16": false,
+        "chunk_size": 128
+    },
+    "ports": {
+        "backend": 8000,
+        "sidecar": 18888
+    },
+    "audio": {
+        "sample_rate": 44100,
+        "buffer_size": 1024,
+        "input_device": -1,
+        "output_device": -1
+    },
+    "advanced": {
+        "log_level": "INFO"
+    }
+}
